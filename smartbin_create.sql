@@ -21,10 +21,17 @@ CREATE TABLE IF NOT EXISTS Items (
   mass INT NOT NULL, -- in grams
   category SMALLINT NOT NULL,
   deposited_by INT NOT NULL,
+  created_at DATETIME NOT NULL,
   extra_info JSON,
   PRIMARY KEY (id),
   INDEX idx_deposited_by_1 (deposited_by),
+  INDEX idx_created_at_1 (created_at),
   FOREIGN KEY (deposited_by)
     REFERENCES Users (id)
     ON DELETE RESTRICT
 ) DEFAULT CHARSET = utf8mb4;
+
+-- to migrate the db to include creation time column do this:
+-- ALTER TABLE Items
+--   ADD COLUMN created_at DATETIME NOT NULL,
+--   ADD INDEX idx_created_at_1 (created_at);

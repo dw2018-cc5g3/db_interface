@@ -7,6 +7,7 @@ Postgres or sqlite or something)
 import records
 import os
 from sqlalchemy.exc import IntegrityError
+from datetime import datetime
 
 # export DATABASE_URL=...; export FLASK_APP=...; python3 flask run
 DATABASE_URL = (os.environ.get('DATABASE_URL')
@@ -54,6 +55,15 @@ def get_user_by_can(can_dirty):
 
         return first_row.as_dict() if first_row is not None else None
 
+
+def get_user_items(user_id):
+    """
+    Get a user's deposited items most recent first
+
+    :param user_id: the user's id
+    :return: a list of Record types
+    """
+    pass
 
 def get_leaderboard(limit=10, offset=None) -> records.Record:
     """
@@ -110,10 +120,13 @@ def create_user(can, name, display_name, phone_number, active=True):
             print('IntegrityError! {}'.format(repr(e)))
             return False
 
-def create_item(score, mass, category, deposited_by, extra_info=None):
+def create_item(score, mass, category, deposited_by, created_at=None,
+                extra_info=None):
     """
     Create a new deposited item.
 
+    :param created_at: Datetime of creation (if not specified just defaults to
+    server time)
     :param score: Score int
     :param mass: Mass int
     :param category: Category int
@@ -129,14 +142,17 @@ def create_item(score, mass, category, deposited_by, extra_info=None):
         'mass': int(mass),
         'category': int(category),
         'deposited_by': int(deposited_by),
+        'created_at': created_at or datetime.now(),
         'extra_info': extra_info
     }
 
     with records.Database(DATABASE_URL) as db:
         try:
             db.query('''
-                INSERT INTO Items (score, mass, category, deposited_by, extra_info)
-                VALUES (:score,:mass,:category,:deposited_by,:extra_info);
+                INSERT INTO Items (score, mass, category, deposited_by,
+                  created_at, extra_info)
+                VALUES (:score,:mass,:category,:deposited_by,:created_at,
+                  :extra_info);
             ''', **params)
 
             return db.query('SELECT last_insert_id() AS id;').first()['id']
