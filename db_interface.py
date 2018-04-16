@@ -1,22 +1,30 @@
+"""
+DB interface. Flask code shouldn't know anything else about the database other
+than the functions exposed in this module. (In case we suddenly move over to
+Postgres or sqlite or something)
+"""
+
 import records
 import os
 from sqlalchemy.exc import IntegrityError
 
+# export DATABASE_URL=...; export FLASK_APP=...; python3 flask run
 DATABASE_URL = (os.environ.get('DATABASE_URL')
                 or 'mysql://mysql:76a92eca8c7c4dc1@xenialsrv:3307/smartbin')
 
-MYSQLDB_CONNECT_PARAMS = {
-    'user': 'mysql',
-    'passwd': '76a92eca8c7c4dc1',
-    'host': 'xenialsrv',
-    'port': 3307,
-    'db': 'smartbin'
-}
+# MYSQLDB_CONNECT_PARAMS = {
+#     'user': 'mysql',
+#     'passwd': '76a92eca8c7c4dc1',
+#     'host': 'xenialsrv',
+#     'port': 3307,
+#     'db': 'smartbin'
+# }
 
 
 def transform_can_to_canonical(can_dirty):
     """
     Transform a CAN to the database format (string of digits).
+
     :param can_dirty: Any CAN
     :return: Canonical DB-formatted CAN.
     """
@@ -34,6 +42,7 @@ def transform_can_to_canonical(can_dirty):
 def get_user_by_can(can_dirty):
     """
     Get a user by card number
+
     :param can_dirty: str
     :return: {user info} or None
     """
@@ -46,7 +55,7 @@ def get_user_by_can(can_dirty):
         return first_row.as_dict() if first_row is not None else None
 
 
-def get_leaderboard() -> records.Record:
+def get_leaderboard(limit=10, offset=None) -> records.Record:
     """
     Get the leaderboard. Returns first 10 rows only!
     champion = get_leaderboard()[0]['display_name'] -> top user
@@ -55,12 +64,13 @@ def get_leaderboard() -> records.Record:
     """
     with records.Database(DATABASE_URL) as db:
         return db.query('''
-            SELECT Users.id, Users.name, Users.display_name, It.score_sum
+            SELECT Users.id, Users.name, Users.display_name,
+              IFNULL(It.score_sum, 0) AS score_sum
             FROM Users
-            INNER JOIN (
-                SELECT SUM(Items.score) AS score_sum, Items.deposited_by
-                FROM Items
-                GROUP BY Items.deposited_by
+            LEFT JOIN (
+              SELECT SUM(Items.score) As score_sum, Items.deposited_by
+              FROM Items
+              GROUP BY Items.deposited_by
             ) AS It
             ON It.deposited_by = Users.id
             ORDER BY It.score_sum DESC
