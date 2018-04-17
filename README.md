@@ -8,6 +8,16 @@ Postgres or sqlite or something)
 
 Run the included `smartbin_sampledata.sql` to get a db with some testing data.
 
+## Suggested API
+
+    GET /user/<can_id> -> get_user_by_can()
+    GET /item/by_user/<can_id> -> get_user_items()
+    
+    GET /leaderboard -> render with get_leaderboard()
+    
+    POST /user -> create_user()
+    POST /item -> create_item()
+
 ## Functions
 
 ### `create_item(score, mass, category, deposited_by, created_at=None, extra_info=None)`
@@ -43,6 +53,16 @@ Get the leaderboard. Returns first 10 rows only!
 `champion = get_leaderboard()[0]['display_name']` -> top user
     
 return: a list of Record types
+
+The return data has this structure:
+    
+    [<Record {"id": 3, "name": "nikos", "display_name": "Nikos", "score_sum": "2039"}>,
+     <Record {"id": 1, "name": "lionell", "display_name": "Lionell Loh", "score_sum": "1118"}>,
+     <Record {"id": 2, "name": "andre", "display_name": "Andre HL", "score_sum": "890"}>,
+     <Record {"id": 12, "name": "emir", "display_name": "Emir Hamzah", "score_sum": "579"}>,
+     <Record {"id": 5, "name": "claire", "display_name": "Claire", "score_sum": "0"}>]
+
+So the template code needs to use some kind of `{% for entry in leaderboard %}` block...
 
 ### `get_user_by_can(can_dirty)`
 
