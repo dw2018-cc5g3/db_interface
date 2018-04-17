@@ -1,8 +1,12 @@
-#db_interface
+# db_interface
 
 DB interface. Flask code shouldn't know anything else about the database other
 than the functions exposed in this module. (In case we suddenly move over to
 Postgres or sqlite or something)
+
+## Sample data
+
+Run the included `smartbin_sampledata.sql` to get a db with some testing data.
 
 ## Functions
 
