@@ -75,13 +75,15 @@ def get_user_items(user_id):
         ''', user_id=user_id).all()
 
 
-def get_leaderboard(limit=10, offset=None) -> records.Record:
+def get_leaderboard(limit=10):
     """
     Get the leaderboard. Returns first 10 rows only!
     champion = get_leaderboard()[0]['display_name'] -> top user
 
+    :param limit: Where to cut off the leaderboard (show the top <limit> users)
     :return a list of Record types
     """
+    limit = int(limit)
     with records.Database(DATABASE_URL) as db:
         return db.query('''
             SELECT Users.id, Users.name, Users.display_name,
@@ -94,8 +96,8 @@ def get_leaderboard(limit=10, offset=None) -> records.Record:
             ) AS It
             ON It.deposited_by = Users.id
             ORDER BY It.score_sum DESC
-            LIMIT 10;
-        ''').all()
+            LIMIT :limit;
+        ''', limit=limit).all()
 
 
 def create_user(can, name, display_name, phone_number, active=True):
