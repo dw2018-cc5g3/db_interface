@@ -10,8 +10,8 @@ Run the included `smartbin_sampledata.sql` to get a db with some testing data.
 
 ## Suggested API
 
-    GET /user/<can_id> -> get_user_by_can()
-    GET /item/by_user/<can_id> -> get_user_items()
+    GET /user/<can> -> get_user_by_can()
+    GET /item/by_user/<user_id> -> get_user_items()
     
     GET /leaderboard -> render with get_leaderboard()
     
