@@ -2,6 +2,8 @@
 DB interface. Flask code shouldn't know anything else about the database other
 than the functions exposed in this module. (In case we suddenly move over to
 Postgres or sqlite or something)
+
+Must export DATABASE_URL... before running this
 """
 
 import records
@@ -58,12 +60,20 @@ def get_user_by_can(can_dirty):
 
 def get_user_items(user_id):
     """
-    Get a user's deposited items most recent first
+    Get a user's deposited items, most recent first
 
     :param user_id: the user's id
     :return: a list of Record types
     """
-    pass
+    with records.Database(DATABASE_URL) as db:
+        return db.query('''
+            SELECT id, score, mass, category, deposited_by, created_at,
+              extra_info
+            FROM Items
+            WHERE deposited_by = :user_id
+            ORDER BY id DESC;
+        ''', user_id=user_id).all()
+
 
 def get_leaderboard(limit=10, offset=None) -> records.Record:
     """
@@ -134,8 +144,9 @@ def create_item(score, mass, category, deposited_by, created_at=None,
     :param extra_info: Extra info in JSON format
     :return: Id of new item or False if create failed
     """
-    if not isinstance(extra_info, str):
-        raise ValueError('extra_info isn\'t a str')
+    # Only one None of type NoneType - same effect as ... is None
+    if not isinstance(extra_info, (str, type(None))):
+        raise ValueError('extra_info isn\'t a str or None')
 
     params = {
         'score': int(score),
