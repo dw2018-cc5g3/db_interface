@@ -84,6 +84,13 @@ def get_leaderboard(limit=10, as_json=False):
     limit = int(limit)
 
     with records.Database(DATABASE_URL) as db:
+        # This is a complex query (compared to the other stuff in here) but the
+        # gist is that it:
+        # - calculates the per-user sum of item scores
+        # - joins that to all the users in the database, using 0 for missing
+        #   scores (so all users are represented)
+        # - sorts it so that the top scorer is first
+        # - limiting the result to :limit (by default 10) records.
         rows = db.query('''
             SELECT users.id, users.name, users.display_name,
               COALESCE(it.score_sum, 0) AS score_sum
@@ -95,7 +102,7 @@ def get_leaderboard(limit=10, as_json=False):
             ) AS it
             ON it.deposited_by = users.id
             ORDER BY score_sum DESC
-            LIMIT 10;
+            LIMIT :limit;
         ''', limit=limit)
 
         return rows.export('json') if as_json else rows.all()
@@ -112,6 +119,7 @@ def create_user(can, name, display_name, phone_number, active=True):
     :param active: Is active (defaults to True)
     :return: Id of new user or False if couldn't create
     """
+    # prepare the params in one nice block here before passing it into the query
     params = {
         'can': transform_can_to_canonical(can),
         'name': str(name),
@@ -205,6 +213,8 @@ def create_item_by_can(score, mass, category, depositing_can, created_at=None,
 
     with records.Database(DATABASE_URL) as db:
         try:
+            # look for the user with the depositing_can, grab his id, and
+            # use that to insert into the items table
             return db.query('''
                 INSERT INTO items (
                   score, mass, category, deposited_by, created_at, extra_info
