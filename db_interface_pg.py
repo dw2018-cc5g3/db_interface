@@ -175,3 +175,46 @@ def create_item(score, mass, category, deposited_by, created_at=None,
             print('IntegrityError! {}'.format(repr(e)))
             return False
 
+
+def create_item_by_can(score, mass, category, depositing_can, created_at=None,
+                extra_info=None):
+    """
+    Create a new deposited item by the CAN from ezlink.
+
+    :param created_at: Datetime of creation (if not specified just defaults to
+    server time)
+    :param score: Score int
+    :param mass: Mass int
+    :param category: Category int
+    :param depositing_can: CAN of depositing user's card
+    :param extra_info: Extra info in JSON format
+    :return: Id of new item or False if create failed
+    """
+    # Only one None of type NoneType - same effect as ... is None
+    if not isinstance(extra_info, (str, type(None))):
+        raise ValueError('extra_info isn\'t a str or None')
+
+    params = {
+        'score': int(score),
+        'mass': int(mass),
+        'category': int(category),
+        'depositing_can': transform_can_to_canonical(depositing_can),
+        'created_at': created_at or datetime.now(),
+        'extra_info': extra_info
+    }
+
+    with records.Database(DATABASE_URL) as db:
+        try:
+            return db.query('''
+                INSERT INTO items (
+                  score, mass, category, deposited_by, created_at, extra_info
+                )
+                SELECT
+                  :score,:mass,:category,users.id,:created_at,:extra_info
+                FROM users
+                WHERE users.can = :depositing_can
+                RETURNING id;
+            ''', **params).first()['id']
+        except IntegrityError as e:
+            print('IntegrityError! {}'.format(repr(e)))
+            return False
