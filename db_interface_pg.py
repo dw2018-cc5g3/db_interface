@@ -33,7 +33,7 @@ def transform_can_to_canonical(can_dirty):
     return can
 
 
-def get_user_by_can(can_dirty):
+def get_user_by_can(can_dirty, as_json=False):
     """
     Get a user by card number
 
@@ -46,10 +46,15 @@ def get_user_by_can(can_dirty):
             FROM users WHERE can = :can;
         ''', can=transform_can_to_canonical(can_dirty)).first()
 
-        return first_row.as_dict() if first_row is not None else None
+        if first_row is None:
+            return None
+        elif as_json:
+            return first_row.export('json')
+        else:
+            return first_row.as_dict()
 
 
-def get_user_items(user_id):
+def get_user_items(user_id, as_json=False):
     """
     Get a user's deposited items, most recent first
 
@@ -57,16 +62,18 @@ def get_user_items(user_id):
     :return: a list of Record types
     """
     with records.Database(DATABASE_URL) as db:
-        return db.query('''
+        rows = db.query('''
             SELECT id, score, mass, category, deposited_by, created_at,
               extra_info
             FROM items
             WHERE deposited_by = :user_id
             ORDER BY id DESC;
-        ''', user_id=user_id).all()
+        ''', user_id=user_id)
+
+        return rows.export('json') if as_json else rows.all()
 
 
-def get_leaderboard(limit=10):
+def get_leaderboard(limit=10, as_json=False):
     """
     Get the leaderboard. Returns first 10 rows only!
     champion = get_leaderboard()[0]['display_name'] -> top user
@@ -77,7 +84,7 @@ def get_leaderboard(limit=10):
     limit = int(limit)
 
     with records.Database(DATABASE_URL) as db:
-        return db.query('''
+        rows = db.query('''
             SELECT users.id, users.name, users.display_name,
               COALESCE(it.score_sum, 0) AS score_sum
             FROM users
@@ -89,7 +96,9 @@ def get_leaderboard(limit=10):
             ON it.deposited_by = users.id
             ORDER BY score_sum DESC
             LIMIT 10;
-        ''', limit=limit).all()
+        ''', limit=limit)
+
+        return rows.export('json') if as_json else rows.all()
 
 
 def create_user(can, name, display_name, phone_number, active=True):
