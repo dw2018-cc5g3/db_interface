@@ -215,7 +215,9 @@ def create_item_by_can(score, mass, category, depositing_can, created_at=None,
         try:
             # look for the user with the depositing_can, grab his id, and
             # use that to insert into the items table
-            return db.query('''
+            # If the CAN doesn't exist, there is no IntegrityError as you
+            # might expect, the row is silently not inserted...
+            result = db.query('''
                 INSERT INTO items (
                   score, mass, category, deposited_by, created_at, extra_info
                 )
@@ -224,7 +226,13 @@ def create_item_by_can(score, mass, category, depositing_can, created_at=None,
                 FROM users
                 WHERE users.can = :depositing_can
                 RETURNING id;
-            ''', **params).first()['id']
+            ''', **params).first()
+
+            # at least indicate a failure occurred
+            if result is None:
+                raise ValueError('no user with this CAN')
+            else:
+                return result['id']
         except IntegrityError as e:
             print('IntegrityError! {}'.format(repr(e)))
             return False
