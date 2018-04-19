@@ -193,7 +193,7 @@ def create_item_by_can(score, mass, category, depositing_can, created_at=None,
     server time)
     :param score: Score int
     :param mass: Mass int
-    :param category: Category int
+    :param category: Category str
     :param depositing_can: CAN of depositing user's card
     :param extra_info: Extra info in JSON format
     :return: Id of new item or False if create failed
@@ -205,7 +205,7 @@ def create_item_by_can(score, mass, category, depositing_can, created_at=None,
     params = {
         'score': int(score),
         'mass': int(mass),
-        'category': int(category),
+        'category': str(category),
         'depositing_can': transform_can_to_canonical(depositing_can),
         'created_at': created_at or datetime.now(),
         'extra_info': extra_info
